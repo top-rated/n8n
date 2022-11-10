@@ -60,13 +60,13 @@ dependencies are installed and the packages get linked correctly. Here a short g
 
 #### Node.js
 
-We suggest using [Node.js](https://nodejs.org/en/) version 16.9 or newer for development purposes.
+We suggest using [Node.js](https://nodejs.org/en/) version 16.9 or newer for development purposes. However Node.js 19 isn't currently supported.
 
-After that we recommend enabling [Node.js corepack](https://nodejs.org/docs/latest-v16.x/api/corepack.html) with `corepack enable`, and [pnpm](https://pnpm.io/) with `corepack prepare pnpm --activate`.
+After that we recommend enabling [Node.js corepack](https://nodejs.org/docs/latest-v16.x/api/corepack.html) with `corepack enable`, and [pnpm](https://pnpm.io/) with `corepack prepare --activate`.
 
-**IMPORTANT**: If you have installed Node.js via homebrew, you'll need to run `brew install corepack`, since homebrew explicitly removes `npm` and `corepack` from [the `node` formula](https://github.com/Homebrew/homebrew-core/blob/master/Formula/node.rb#L66).
+**IMPORTANT**: If you use homebrew, please install `node@18` or `node@16` but not `node`,because homebrew explicitly removes `npm` and `corepack` from [the `node` formula](https://github.com/Homebrew/homebrew-core/blob/master/Formula/node.rb#L66).
 
-**IMPORTANT**: If you are on windows, you'd need to run `corepack enable` and `corepack prepare pnpm --activate` in a terminal as an administrator.
+**IMPORTANT**: If you are on windows, you'd need to run `corepack enable` and `corepack prepare --activate` in a terminal as an administrator.
 
 #### Build tools
 
