@@ -22,6 +22,7 @@ import {
 	OneToMany,
 	PrimaryGeneratedColumn,
 } from 'typeorm';
+import sortKeys from 'sort-keys';
 
 import config from '@/config';
 import { TagEntity } from './TagEntity';
@@ -29,7 +30,8 @@ import { SharedWorkflow } from './SharedWorkflow';
 import { objectRetriever, sqlite } from '../utils/transformers';
 import { AbstractEntity, jsonColumnType } from './AbstractEntity';
 import type { IWorkflowDb } from '@/Interfaces';
-import { alphabetizeKeys } from '@/utils';
+
+const alphabetizeKeys = <T extends object>(obj: T) => sortKeys(obj, { deep: true });
 
 @Entity()
 export class WorkflowEntity extends AbstractEntity implements IWorkflowDb {
@@ -99,15 +101,16 @@ export class WorkflowEntity extends AbstractEntity implements IWorkflowDb {
 	@AfterUpdate()
 	@AfterInsert()
 	setHash(): void {
-		const { name, active, nodes, connections, settings, staticData, pinData } = this;
+		const { id, name, active, nodes, connections, settings, staticData, pinData } = this;
+		if (!id || !connections) return;
 
 		const state = JSON.stringify({
 			name,
 			active,
 			nodes: nodes ? nodes.map(alphabetizeKeys) : [],
-			connections,
-			settings,
-			staticData,
+			connections: alphabetizeKeys(connections),
+			settings: settings ? alphabetizeKeys(settings) : undefined,
+			staticData: staticData ? alphabetizeKeys(staticData) : undefined,
 			pinData,
 		});
 

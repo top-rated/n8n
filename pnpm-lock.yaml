@@ -194,6 +194,7 @@ importers:
       run-script-os: ^1.0.7
       semver: ^7.3.8
       shelljs: ^0.8.5
+      sort-keys: ^4.2.0
       source-map-support: ^0.5.21
       sqlite3: ^5.1.2
       sse-channel: ^3.1.1
@@ -276,6 +277,7 @@ importers:
       psl: 1.9.0
       semver: 7.3.8
       shelljs: 0.8.5
+      sort-keys: 4.2.0
       sqlite3: 5.1.2
       sse-channel: 3.1.1
       swagger-ui-express: 4.5.0_express@4.18.2
@@ -13511,7 +13513,6 @@ packages:
   /is-plain-obj/2.1.0:
     resolution: {integrity: sha512-YWnfyRwxL/+SsrWYfOpUtz5b3YD+nyfkHvjbcanzk8zgyO4ASD67uVMRt8k5bM4lLMDnXfriRhOpemw+NfT1eA==}
     engines: {node: '>=8'}
-    dev: true
 
   /is-plain-object/2.0.4:
     resolution: {integrity: sha512-h5PpgXkWitc38BBMYawTYMWJHFZJVnBquFE57xFpjB8pJFiF6gZ+bU+WyI/yqXiFR5mdLsgYNaPe8uao6Uv9Og==}
@@ -19315,7 +19316,6 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       is-plain-obj: 2.1.0
-    dev: true
 
   /source-list-map/2.0.1:
     resolution: {integrity: sha512-qnQ7gVMxGNxsiL4lEuJwe/To8UnK7fAnmbGEEH8RpLouuKbeEm0lhbQVFIrNSuB+G7tVrAlVsZgETT5nljf+Iw==}

@@ -29,15 +29,3 @@ function findWorkflowStart(executionMode: 'integrated' | 'cli') {
 export const findSubworkflowStart = findWorkflowStart('integrated');
 
 export const findCliWorkflowStart = findWorkflowStart('cli');
-
-export const alphabetizeKeys = (obj: INode) =>
-	Object.keys(obj)
-		.sort()
-		.reduce<Partial<INode>>(
-			(acc, key) => ({
-				...acc,
-				// @ts-expect-error @TECH_DEBT Adding index signature to INode causes type issues downstream
-				[key]: obj[key],
-			}),
-			{},
-		);
