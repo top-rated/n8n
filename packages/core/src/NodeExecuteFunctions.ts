@@ -88,7 +88,7 @@ import get from 'lodash.get';
 import type { Request, Response } from 'express';
 import FormData from 'form-data';
 import path from 'path';
-import type { OptionsWithUri, OptionsWithUrl, RequestCallback, RequiredUriUrl } from 'request';
+import type { OptionsWithUri, OptionsWithUrl, RequiredUriUrl } from 'request';
 import type { RequestPromiseOptions } from 'request-promise-native';
 import requestPromise from 'request-promise-native';
 import FileType from 'file-type';
@@ -590,14 +590,12 @@ export async function proxyRequestToAxios(
 	additionalData: IWorkflowExecuteAdditionalData,
 	node: INode,
 	uriOrObject: string | IDataObject,
-	options?: IDataObject,
 ): Promise<any> {
 	// Check if there's a better way of getting this config here
 	if (process.env.N8N_USE_DEPRECATED_REQUEST_LIB) {
 		return requestPromiseWithDefaults.call(
 			null,
 			uriOrObject as unknown as RequiredUriUrl & RequestPromiseOptions,
-			options as unknown as RequestCallback,
 		);
 	}
 
@@ -612,7 +610,7 @@ export async function proxyRequestToAxios(
 	if (uriOrObject !== undefined && typeof uriOrObject === 'object') {
 		configObject = uriOrObject;
 	} else {
-		configObject = options || {};
+		configObject = {};
 	}
 
 	axiosConfig = Object.assign(axiosConfig, await parseRequestObject(configObject));
@@ -663,7 +661,7 @@ export async function proxyRequestToAxios(
 				headers: response.headers,
 				statusCode: response.status,
 				statusMessage: response.statusText,
-				request: response.request,
+				// request: response.request,
 			};
 		} else {
 			let body = response.data;
@@ -1058,14 +1056,11 @@ async function prepareBinaryData(
 
 /**
  * Makes a request using OAuth data for authentication
- *
- * @param {(OptionsWithUri | requestPromise.RequestPromiseOptions)} requestOptions
- *
  */
 export async function requestOAuth2(
 	this: IAllExecuteFunctions,
 	credentialsType: string,
-	requestOptions: OptionsWithUri | requestPromise.RequestPromiseOptions | IHttpRequestOptions,
+	requestOptions: clientOAuth2.RequestObject,
 	node: INode,
 	additionalData: IWorkflowExecuteAdditionalData,
 	oAuth2Options?: IOAuth2Options,
@@ -1124,7 +1119,7 @@ export async function requestOAuth2(
 	);
 	// Signs the request by adding authorization headers or query parameters depending
 	// on the token-type used.
-	const newRequestOptions = token.sign(requestOptions as clientOAuth2.RequestObject);
+	const newRequestOptions = token.sign(requestOptions);
 	const newRequestHeaders = (newRequestOptions.headers = newRequestOptions.headers ?? {});
 	// If keep bearer is false remove the it from the authorization header
 	if (oAuth2Options?.keepBearer === false && typeof newRequestHeaders.Authorization === 'string') {
@@ -1184,7 +1179,7 @@ export async function requestOAuth2(
 					credentialsType,
 					credentials,
 				);
-				const refreshedRequestOption = newToken.sign(requestOptions as clientOAuth2.RequestObject);
+				const refreshedRequestOption = newToken.sign(requestOptions);
 
 				if (oAuth2Options?.keyToIncludeInAccessTokenHeader) {
 					Object.assign(newRequestHeaders, {
@@ -1271,7 +1266,7 @@ export async function requestOAuth2(
 				);
 
 				// Make the request again with the new token
-				const newRequestOptions = newToken.sign(requestOptions as clientOAuth2.RequestObject);
+				const newRequestOptions = newToken.sign(requestOptions);
 				newRequestOptions.headers = newRequestOptions.headers ?? {};
 
 				if (oAuth2Options?.keyToIncludeInAccessTokenHeader) {
@@ -1374,7 +1369,7 @@ export async function httpRequestWithAuthentication(
 			return await requestOAuth2.call(
 				this,
 				credentialsType,
-				requestOptions,
+				requestOptions as clientOAuth2.RequestObject,
 				node,
 				additionalData,
 				additionalCredentialOptions?.oauth2,
@@ -1569,7 +1564,7 @@ export async function requestWithAuthentication(
 			return await requestOAuth2.call(
 				this,
 				credentialsType,
-				requestOptions,
+				requestOptions as clientOAuth2.RequestObject,
 				node,
 				additionalData,
 				additionalCredentialOptions?.oauth2,
@@ -2072,8 +2067,7 @@ const getRequestHelperFunctions = (
 		);
 	},
 
-	request: async (uriOrObject, options) =>
-		proxyRequestToAxios(workflow, additionalData, node, uriOrObject, options),
+	request: async (uriOrObject) => proxyRequestToAxios(workflow, additionalData, node, uriOrObject),
 
 	async requestWithAuthentication(
 		this,
@@ -2103,7 +2097,7 @@ const getRequestHelperFunctions = (
 	async requestOAuth2(
 		this: IAllExecuteFunctions,
 		credentialsType: string,
-		requestOptions: OptionsWithUri | requestPromise.RequestPromiseOptions,
+		requestOptions: clientOAuth2.RequestObject,
 		oAuth2Options?: IOAuth2Options,
 	): Promise<any> {
 		return requestOAuth2.call(
