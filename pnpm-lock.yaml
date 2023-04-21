@@ -253,12 +253,18 @@ importers:
       flatted:
         specifier: ^3.2.4
         version: 3.2.7
+      gitops-secrets:
+        specifier: ^0.0.5
+        version: 0.0.5
       google-timezones-json:
         specifier: ^1.0.2
         version: 1.0.2
       handlebars:
         specifier: 4.7.7
         version: 4.7.7
+      infisical-node:
+        specifier: ^1.0.39
+        version: 1.0.39
       inquirer:
         specifier: ^7.0.1
         version: 7.3.3
@@ -8309,6 +8315,16 @@ packages:
       - debug
     dev: false
 
+  /axios@1.3.6:
+    resolution: {integrity: sha512-PEcdkk7JcdPiMDkvM4K6ZBRYq9keuVJsToxm2zQIM70Qqo2WHTdJZMXcG9X+RmRp2VPNUQC8W1RAGbgt6b1yMg==}
+    dependencies:
+      follow-redirects: 1.15.2(debug@3.2.7)
+      form-data: 4.0.0
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
+    dev: false
+
   /babel-core@7.0.0-bridge.0(@babel/core@7.20.12):
     resolution: {integrity: sha512-poPX9mZH/5CSanm50Q+1toVci6pv5KSRv/5TWCwtzQS5XEwn40BcCrgIeMFWP9CKKIniKXNxoIOnOq4VVlGXhg==}
     peerDependencies:
@@ -12470,6 +12486,11 @@ packages:
     resolution: {integrity: sha512-wIh+gKBI9Nshz2o46B0B3f5k/W+WI9ZAv6y5Dn5WJ5SK1t0TnDimB4WE5rmTD05ZAIn8HALCZVmCsvj0w0v0lw==}
     dev: true
 
+  /gitops-secrets@0.0.5:
+    resolution: {integrity: sha512-RKS6ZJa4IJvZ0UC74ESa7/qwj0LluX5Lg2Q3tJNu0wqJph5nuosCYIj4BA8K4nftUjvDoEpjii3bDEpLaYCWnw==}
+    engines: {node: '>=12'}
+    dev: false
+
   /glob-parent@3.1.0:
     resolution: {integrity: sha512-E8Ak/2+dZY6fnzlR7+ueWvhsH1SjHr4jjss4YS/h4py44jY9MhK/VFdaZJAWDz6BbL21KeteKxFSFpq8OS5gVA==}
     dependencies:
@@ -13195,6 +13216,16 @@ packages:
     resolution: {integrity: sha512-IClj+Xz94+d7irH5qRyfJonOdfTzuDaifE6ZPWfx0N0+/ATZCbuTPq2prFl526urkQd90WyUKIh1DfBQ2hMz9A==}
     dev: false
     optional: true
+
+  /infisical-node@1.0.39:
+    resolution: {integrity: sha512-RXao/ZDn5UxUo/at3DjhdG0O2copXWSGcZuX8eDgTkx0WeOSebDRfRnHOMWPpYIQNYWF4nWxK+T3Dn5j/2gsdA==}
+    dependencies:
+      axios: 1.3.6
+      tweetnacl: 1.0.3
+      tweetnacl-util: 0.15.1
+    transitivePeerDependencies:
+      - debug
+    dev: false
 
   /inflected@2.1.0:
     resolution: {integrity: sha512-hAEKNxvHf2Iq3H60oMBHkB4wl5jn3TPF3+fXek/sRwAB5gP9xWs4r7aweSF95f99HFoz69pnZTcu8f0SIHV18w==}
@@ -20607,8 +20638,16 @@ packages:
       turbo-windows-arm64: 1.8.8
     dev: true
 
+  /tweetnacl-util@0.15.1:
+    resolution: {integrity: sha512-RKJBIj8lySrShN4w6i/BonWp2Z/uxwC3h4y7xsRrpP59ZboCd0GpEVsOnMDYLMmKBpYhb5TgHzZXy7wTfYFBRw==}
+    dev: false
+
   /tweetnacl@0.14.5:
     resolution: {integrity: sha512-KXXFFdAbFXY4geFIwoyNK+f5Z1b7swfXABfL7HXCmoIWMKU3dmS26672A4EeQtDzLKy7SXmfBu51JolvEKwtGA==}
+
+  /tweetnacl@1.0.3:
+    resolution: {integrity: sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==}
+    dev: false
 
   /type-check@0.3.2:
     resolution: {integrity: sha512-ZCmOJdvOWDBYJlzAoFkC+Q0+bUyEOS1ltgp1MGU03fqHG+dbi9tBFU2Rd9QKiDZFAYrhPh2JUf7rZRIuHRKtOg==}

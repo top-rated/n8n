@@ -27,6 +27,8 @@ import type { AxiosRequestConfig } from 'axios';
 import axios from 'axios';
 import type { RequestOptions } from 'oauth-1.0a';
 import clientOAuth1 from 'oauth-1.0a';
+import infisical from 'infisical-node';
+import { providers } from 'gitops-secrets';
 
 import {
 	BinaryDataManager,
@@ -442,6 +444,21 @@ class Server extends AbstractServer {
 	}
 
 	async configure(): Promise<void> {
+		if (process.env.DOPPLER_TOKEN) {
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+			const secrets = await providers.doppler.fetch();
+			Object.keys(secrets).map((key) => {
+				process.env[key] = String(secrets[key]);
+			});
+		}
+
+		if (process.env.INFISICAL_TOKEN) {
+			await infisical.connect({
+				token: process.env.INFISICAL_TOKEN,
+				attachToProcessEnv: true,
+			});
+		}
+
 		configureMetrics(this.app);
 
 		this.frontendSettings.isNpmAvailable = await exec('npm --version')
