@@ -429,6 +429,7 @@ export interface IGetExecuteFunctions {
 		additionalData: IWorkflowExecuteAdditionalData,
 		executeData: IExecuteData,
 		mode: WorkflowExecuteMode,
+		abortController?: AbortController,
 	): IExecuteFunctions;
 }
 
@@ -444,6 +445,7 @@ export interface IGetExecuteSingleFunctions {
 		additionalData: IWorkflowExecuteAdditionalData,
 		executeData: IExecuteData,
 		mode: WorkflowExecuteMode,
+		abortController?: AbortController,
 	): IExecuteSingleFunctions;
 }
 
@@ -745,6 +747,7 @@ type BaseExecutionFunctions = FunctionsBaseWithRequiredKeys<'getMode'> & {
 	getExecuteData(): IExecuteData;
 	getWorkflowDataProxy(itemIndex: number): IWorkflowDataProxyData;
 	getInputSourceData(inputIndex?: number, inputName?: string): ISourceData;
+	onExecutionCancellation(handler: () => void): void;
 };
 
 export type IExecuteFunctions = ExecuteFunctions.GetNodeParameterFn &
