@@ -1,5 +1,5 @@
 <template>
-	<div ref="htmlEditor" class="ph-no-capture"></div>
+	<div ref="htmlEditor" class="ph-no-capture html-editor"></div>
 </template>
 
 <script lang="ts">
@@ -35,9 +35,9 @@ import { expressionInputHandler } from '@/plugins/codemirror/inputHandlers/expre
 import { highlighter } from '@/plugins/codemirror/resolvableHighlighter';
 import { htmlEditorEventBus } from '@/event-bus';
 import { expressionManager } from '@/mixins/expressionManager';
-import { theme } from './theme';
-import { nonTakenRanges } from './utils';
-import type { Range, Section } from './types';
+import { nonTakenRanges } from './HtmlEditor/utils';
+import type { Range, Section } from './HtmlEditor/types';
+import { codeEditorTheme } from './theme';
 
 export default mixins(expressionManager).extend({
 	name: 'HtmlEditor',
@@ -93,7 +93,7 @@ export default mixins(expressionManager).extend({
 					{ key: 'Mod-Shift-z', run: redo },
 				]),
 				indentOnInput(),
-				theme,
+				codeEditorTheme({ isReadOnly: this.isReadOnly }),
 				lineNumbers(),
 				highlightActiveLineGutter(),
 				history(),

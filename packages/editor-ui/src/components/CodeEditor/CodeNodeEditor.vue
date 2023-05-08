@@ -1,11 +1,11 @@
 <template>
 	<div
-		:class="['code-node-editor', $style['code-node-editor-container'], language]"
+		:class="['code-node-editor', $style['code-node-editor-container']]"
 		@mouseover="onMouseOver"
 		@mouseout="onMouseOut"
 		ref="codeNodeEditorContainer"
 	>
-		<div ref="codeNodeEditor" class="code-node-editor-input ph-no-capture"></div>
+		<div ref="codeNodeEditor" :class="['ph-no-capture', 'code-node-editor', language]"></div>
 		<n8n-button
 			v-if="isCloud && (isEditorHovered || isEditorFocused)"
 			size="small"
@@ -40,11 +40,14 @@ import { useRootStore } from '@/stores/n8nRoot.store';
 import { useSettingsStore } from '@/stores/settings.store';
 import Modal from '@/components/Modal.vue';
 
-import { readOnlyEditorExtensions, writableEditorExtensions } from './baseExtensions';
-import { CODE_PLACEHOLDERS } from './constants';
-import { linterExtension } from './linter';
-import { completerExtension } from './completer';
-import { codeNodeEditorTheme } from './theme';
+import {
+	readOnlyEditorExtensions,
+	writableEditorExtensions,
+} from './CodeNodeEditor/baseExtensions';
+import { CODE_PLACEHOLDERS } from './CodeNodeEditor/constants';
+import { linterExtension } from './CodeNodeEditor/linter';
+import { completerExtension } from './CodeNodeEditor/completer';
+import { codeEditorTheme } from './theme';
 
 export default mixins(linterExtension, completerExtension, workflowHelpers).extend({
 	name: 'code-node-editor',
@@ -216,7 +219,7 @@ export default mixins(linterExtension, completerExtension, workflowHelpers).exte
 			...readOnlyEditorExtensions,
 			EditorState.readOnly.of(isReadOnly),
 			EditorView.editable.of(!isReadOnly),
-			codeNodeEditorTheme({ isReadOnly }),
+			codeEditorTheme({ isReadOnly }),
 		];
 
 		if (!isReadOnly) {
