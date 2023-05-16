@@ -47,7 +47,7 @@ export async function getNodeParameterOptions(
 		credentials?: INodeCredentials;
 	},
 ): Promise<INodePropertyOptions[]> {
-	return makeRestApiRequest(context, 'GET', '/node-parameter-options', sendData);
+	return makeRestApiRequest(context, 'GET', '/node-types/parameter-options', sendData);
 }
 
 export async function getResourceLocatorResults(
@@ -57,7 +57,7 @@ export async function getResourceLocatorResults(
 	return makeRestApiRequest(
 		context,
 		'GET',
-		'/nodes-list-search',
+		'/node-types/list-search',
 		sendData as unknown as IDataObject,
 	);
 }
@@ -69,7 +69,7 @@ export async function getResourceMapperFields(
 	return makeRestApiRequest(
 		context,
 		'GET',
-		'/get-mapping-fields',
+		'/node-types/mapping-fields',
 		sendData as unknown as IDataObject,
 	);
 }

@@ -301,59 +301,6 @@ export declare namespace OAuthRequest {
 }
 
 // ----------------------------------
-//      /node-parameter-options
-// ----------------------------------
-
-export type NodeParameterOptionsRequest = AuthenticatedRequest<
-	{},
-	{},
-	{},
-	{
-		nodeTypeAndVersion: string;
-		methodName: string;
-		path: string;
-		currentNodeParameters: string;
-		credentials: string;
-	}
->;
-
-// ----------------------------------
-//        /node-list-search
-// ----------------------------------
-
-export type NodeListSearchRequest = AuthenticatedRequest<
-	{},
-	{},
-	{},
-	{
-		nodeTypeAndVersion: string;
-		methodName: string;
-		path: string;
-		currentNodeParameters: string;
-		credentials: string;
-		filter?: string;
-		paginationToken?: string;
-	}
->;
-
-// ----------------------------------
-//        /get-mapping-fields
-// ----------------------------------
-
-export type ResourceMapperRequest = AuthenticatedRequest<
-	{},
-	{},
-	{},
-	{
-		nodeTypeAndVersion: string;
-		methodName: string;
-		path: string;
-		currentNodeParameters: string;
-		credentials: string;
-	}
->;
-
-// ----------------------------------
 //             /tags
 // ----------------------------------
 
@@ -376,6 +323,37 @@ export declare namespace NodeRequest {
 	type Delete = AuthenticatedRequest<{}, {}, {}, { name: string }>;
 
 	type Update = Post;
+}
+
+// ----------------------------------
+//             /node-types
+// ----------------------------------
+
+export declare namespace NodeTypesRequest {
+	type BaseRequest = AuthenticatedRequest<
+		{},
+		{},
+		{},
+		{
+			nodeTypeAndVersion: string;
+			methodName: string;
+			path: string;
+			currentNodeParameters: string;
+			credentials: string;
+		}
+	>;
+
+	type GetMappingFields = BaseRequest;
+	type GetParameterOptions = BaseRequest;
+	type ListSearch = AuthenticatedRequest<
+		{},
+		{},
+		{},
+		BaseRequest['query'] & {
+			filter?: string;
+			paginationToken?: string;
+		}
+	>;
 }
 
 // ----------------------------------
