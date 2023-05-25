@@ -24,7 +24,7 @@ import type {
 import * as ResponseHelper from '@/ResponseHelper';
 import { isWorkflowIdValid } from '@/utils';
 import { Service } from 'typedi';
-import type { ExecutionRepository } from './databases/repositories';
+import { ExecutionRepository } from './databases/repositories';
 
 @Service()
 export class ActiveExecutions {

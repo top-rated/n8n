@@ -6,6 +6,7 @@ import { WebhookServer } from '@/WebhookServer';
 import { Queue } from '@/Queue';
 import { BaseCommand } from './BaseCommand';
 import { Container } from 'typedi';
+import type { AbstractServer } from '@/AbstractServer';
 
 export class Webhook extends BaseCommand {
 	static description = 'Starts n8n webhook process. Intercepts only production URLs.';
@@ -16,7 +17,9 @@ export class Webhook extends BaseCommand {
 		help: flags.help({ char: 'h' }),
 	};
 
-	protected server = new WebhookServer();
+	createServer(): AbstractServer {
+		return new WebhookServer();
+	}
 
 	/**
 	 * Stops n8n in a graceful way.
@@ -84,7 +87,7 @@ export class Webhook extends BaseCommand {
 
 	async run() {
 		await Container.get(Queue).init();
-		await this.server.start();
+		await this.server?.start();
 		this.logger.info('Webhook listener waiting for requests.');
 
 		// Make sure that the process does not close

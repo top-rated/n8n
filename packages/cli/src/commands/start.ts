@@ -28,6 +28,7 @@ import { EDITOR_UI_DIST_DIR, GENERATED_STATIC_DIR } from '@/constants';
 import { eventBus } from '@/eventbus';
 import { BaseCommand } from './BaseCommand';
 import { InternalHooks } from '@/InternalHooks';
+import { AbstractServer } from '@/AbstractServer';
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-var-requires
 const open = require('open');
@@ -61,7 +62,9 @@ export class Start extends BaseCommand {
 
 	protected activeWorkflowRunner: ActiveWorkflowRunner;
 
-	protected server = new Server();
+	createServer(): AbstractServer {
+		return new Server();
+	}
 
 	/**
 	 * Opens the UI in browser
@@ -330,7 +333,7 @@ export class Start extends BaseCommand {
 			);
 		}
 
-		await this.server.start();
+		await this.server?.start();
 
 		// Start to get active workflows and run their triggers
 		await this.activeWorkflowRunner.init();

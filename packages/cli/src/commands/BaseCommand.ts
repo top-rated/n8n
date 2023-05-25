@@ -39,6 +39,10 @@ export abstract class BaseCommand extends Command {
 
 	protected server?: AbstractServer;
 
+	createServer(): AbstractServer | undefined {
+		return undefined;
+	}
+
 	async init(): Promise<void> {
 		await initErrorHandling();
 
@@ -59,6 +63,7 @@ export abstract class BaseCommand extends Command {
 			this.exitWithCrash('There was an error initializing DB', error),
 		);
 
+		this.server = this.createServer();
 		await this.server?.init();
 
 		await Db.migrate().catch(async (error: Error) =>
