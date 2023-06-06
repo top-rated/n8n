@@ -9,7 +9,7 @@ import type {
 	INodeTypeDescription,
 	IWebhookResponseData,
 } from 'n8n-workflow';
-import { deepCopy, jsonParse, NodeOperationError } from 'n8n-workflow';
+import { deepCopy } from 'n8n-workflow';
 
 import { idsExist, surveyMonkeyApiRequest, surveyMonkeyRequestAllItems } from './GenericFunctions';
 
@@ -474,7 +474,6 @@ export class SurveyMonkeyTrigger implements INodeType {
 		const authenticationMethod = this.getNodeParameter('authentication') as string;
 		let credentials: IDataObject;
 		const headerData = this.getHeaderData() as IDataObject;
-		const req = this.getRequestObject();
 		const webhookName = this.getWebhookName();
 
 		if (authenticationMethod === 'accessToken') {
@@ -492,244 +491,227 @@ export class SurveyMonkeyTrigger implements INodeType {
 			return {};
 		}
 
-		return new Promise((resolve, _reject) => {
-			const data: Buffer[] = [];
+		const req = this.getRequestObject();
+		const computedSignature = createHmac(
+			'sha1',
+			`${credentials.clientId}&${credentials.clientSecret}`,
+		)
+			.update(req.rawBody)
+			.digest('base64');
+		if (headerData['sm-signature'] !== computedSignature) {
+			// Signature is not valid so ignore call
+			return {};
+		}
 
-			req.on('data', (chunk) => {
-				data.push(chunk as Buffer);
-			});
+		let responseData = req.body;
+		let endpoint = '';
 
-			req.on('end', async () => {
-				const computedSignature = createHmac(
-					'sha1',
-					`${credentials.clientId}&${credentials.clientSecret}`,
-				)
-					.update(data.join(''))
-					.digest('base64');
-				if (headerData['sm-signature'] !== computedSignature) {
-					// Signature is not valid so ignore call
-					return {};
+		let returnItem: INodeExecutionData[] = [
+			{
+				json: responseData,
+			},
+		];
+
+		if (event === 'response_completed') {
+			const resolveData = this.getNodeParameter('resolveData') as boolean;
+			if (resolveData) {
+				if (objectType === 'survey') {
+					endpoint = `/surveys/${responseData.resources.survey_id}/responses/${responseData.object_id}/details`;
+				} else {
+					endpoint = `/collectors/${responseData.resources.collector_id}/responses/${responseData.object_id}/details`;
+				}
+				responseData = await surveyMonkeyApiRequest.call(this, 'GET', endpoint);
+				const surveyId = responseData.survey_id;
+
+				const questions: IQuestion[] = [];
+				const answers = new Map<string, IAnswer[]>();
+
+				const { pages } = await surveyMonkeyApiRequest.call(
+					this,
+					'GET',
+					`/surveys/${surveyId}/details`,
+				);
+
+				for (const page of pages) {
+					questions.push.apply(questions, page.questions as IQuestion[]);
 				}
 
-				let responseData = jsonParse<any>(data.join(''));
-				let endpoint = '';
+				for (const page of responseData.pages as IDataObject[]) {
+					for (const question of page.questions as IDataObject[]) {
+						answers.set(question.id as string, question.answers as IAnswer[]);
+					}
+				}
 
-				let returnItem: INodeExecutionData[] = [
+				const responseQuestions = new Map<string, number | string | string[] | IDataObject>();
+
+				for (const question of questions) {
+					/*
+					TODO: add support for premium components
+					- File Upload
+					- Matrix of dropdowm menus
+					*/
+
+					// if question does not have an answer ignore it
+					if (!answers.get(question.id)) {
+						continue;
+					}
+
+					const heading = question.headings![0].heading as string;
+
+					if (question.family === 'open_ended' || question.family === 'datetime') {
+						if (question.subtype !== 'multi') {
+							responseQuestions.set(heading, answers.get(question.id)![0].text as string);
+						} else {
+							const results: IDataObject = {};
+							const keys = (question.answers.rows as IRow[]).map((e) => e.text);
+							const values = answers.get(question.id)?.map((e) => e.text) as string[];
+							for (let i = 0; i < keys.length; i++) {
+								// if for some reason there are questions texts repeted add the index to the key
+								if (results[keys[i]] !== undefined) {
+									results[`${keys[i]}(${i})`] = values[i] || '';
+								} else {
+									results[keys[i]] = values[i] || '';
+								}
+							}
+							responseQuestions.set(heading, results);
+						}
+					}
+
+					if (question.family === 'single_choice') {
+						const other = question.answers.other as IOther;
+						if (other?.visible && other.is_answer_choice && answers.get(question.id)![0].other_id) {
+							responseQuestions.set(heading, answers.get(question.id)![0].text as string);
+						} else if (other?.visible && !other.is_answer_choice) {
+							const choiceId = answers.get(question.id)![0].choice_id;
+
+							const choice = (question.answers.choices as IChoice[]).filter(
+								(e) => e.id === choiceId,
+							)[0];
+
+							const comment = answers.get(question.id)?.find((e) => e.other_id === other.id)
+								?.text as string;
+							responseQuestions.set(heading, { value: choice.text, comment });
+						} else {
+							const choiceId = answers.get(question.id)![0].choice_id;
+							const choice = (question.answers.choices as IChoice[]).filter(
+								(e) => e.id === choiceId,
+							)[0];
+							responseQuestions.set(heading, choice.text);
+						}
+					}
+
+					if (question.family === 'multiple_choice') {
+						const other = question.answers.other as IOther;
+						const choiceIds = answers.get(question.id)?.map((e) => e.choice_id);
+						const value = (question.answers.choices as IChoice[])
+							.filter((e) => choiceIds?.includes(e.id))
+							.map((e) => e.text);
+						// if "Add an "Other" Answer Option for Comments" is active and was selected
+						if (other?.is_answer_choice && other.visible) {
+							const text = answers.get(question.id)?.find((e) => e.other_id === other.id)
+								?.text as string;
+							value.push(text);
+						}
+						responseQuestions.set(heading, value);
+					}
+
+					if (question.family === 'matrix') {
+						// if more than one row it's a matrix/rating-scale
+						const rows = question.answers.rows as IRow[];
+
+						if (rows.length > 1) {
+							const results: IDataObject = {};
+							const choiceIds = answers.get(question.id)?.map((e) => e.choice_id) as string[];
+							const rowIds = answers.get(question.id)?.map((e) => e.row_id) as string[];
+
+							const rowsValues = (question.answers.rows as IRow[])
+								.filter((e) => rowIds.includes(e.id))
+								.map((e) => e.text);
+
+							const choicesValues = (question.answers.choices as IChoice[])
+								.filter((e) => choiceIds.includes(e.id))
+								.map((e) => e.text);
+
+							for (let i = 0; i < rowsValues.length; i++) {
+								results[rowsValues[i]] = choicesValues[i] || '';
+							}
+
+							// add the rows that were not answered
+							for (const row of question.answers.rows as IDataObject[]) {
+								if (!rowIds.includes(row.id as string)) {
+									results[row.text as string] = '';
+								}
+							}
+							// the comment then add the comment
+							const other = question.answers.other as IOther;
+							if (other?.visible) {
+								results.comment = answers.get(question.id)?.filter((e) => e.other_id)[0].text;
+							}
+
+							responseQuestions.set(heading, results);
+						} else {
+							const choiceIds = answers.get(question.id)?.map((e) => e.choice_id);
+							const value = (question.answers.choices as IChoice[])
+								.filter((e) => choiceIds!.includes(e.id))
+								.map((e) => (e.text === '' ? e.weight : e.text))[0];
+							responseQuestions.set(heading, value);
+
+							// if "Add an Other Answer Option for Comments" is active then add comment to the answer
+							const other = question.answers.other as IOther;
+							if (other?.visible) {
+								const response: IDataObject = {};
+								//const questionName = (question.answers.other as IOther).text as string;
+								const text = answers.get(question.id)?.filter((e) => e.other_id)[0].text;
+								response.value = value;
+								response.comment = text;
+								responseQuestions.set(heading, response);
+							}
+						}
+					}
+
+					if (question.family === 'demographic') {
+						const rows: IDataObject = {};
+						for (const row of answers.get(question.id) as IAnswer[]) {
+							rows[row.row_id as string] = row.text;
+						}
+						const addressInfo: IDataObject = {};
+						for (const answer of question.answers.rows as IDataObject[]) {
+							addressInfo[answer.type as string] = rows[answer.id as string] || '';
+						}
+						responseQuestions.set(heading, addressInfo);
+					}
+
+					if (question.family === 'presentation') {
+						if (question.subtype === 'image') {
+							const { url } = question.headings![0].image as IDataObject;
+							responseQuestions.set(heading, url as string);
+						}
+					}
+				}
+				delete responseData.pages;
+				responseData.questions = {};
+
+				// Map the "Map" to JSON
+				const tuples = deepCopy([...responseQuestions]);
+				for (const [key, value] of tuples) {
+					responseData.questions[key] = value;
+				}
+
+				const onlyAnswers = this.getNodeParameter('onlyAnswers') as boolean;
+				if (onlyAnswers) {
+					responseData = responseData.questions;
+				}
+
+				returnItem = [
 					{
 						json: responseData,
 					},
 				];
+			}
+		}
 
-				if (event === 'response_completed') {
-					const resolveData = this.getNodeParameter('resolveData') as boolean;
-					if (resolveData) {
-						if (objectType === 'survey') {
-							endpoint = `/surveys/${responseData.resources.survey_id}/responses/${responseData.object_id}/details`;
-						} else {
-							endpoint = `/collectors/${responseData.resources.collector_id}/responses/${responseData.object_id}/details`;
-						}
-						responseData = await surveyMonkeyApiRequest.call(this, 'GET', endpoint);
-						const surveyId = responseData.survey_id;
-
-						const questions: IQuestion[] = [];
-						const answers = new Map<string, IAnswer[]>();
-
-						const { pages } = await surveyMonkeyApiRequest.call(
-							this,
-							'GET',
-							`/surveys/${surveyId}/details`,
-						);
-
-						for (const page of pages) {
-							questions.push.apply(questions, page.questions as IQuestion[]);
-						}
-
-						for (const page of responseData.pages as IDataObject[]) {
-							for (const question of page.questions as IDataObject[]) {
-								answers.set(question.id as string, question.answers as IAnswer[]);
-							}
-						}
-
-						const responseQuestions = new Map<string, number | string | string[] | IDataObject>();
-
-						for (const question of questions) {
-							/*
-							TODO: add support for premium components
-							- File Upload
-							- Matrix of dropdowm menus
-							*/
-
-							// if question does not have an answer ignore it
-							if (!answers.get(question.id)) {
-								continue;
-							}
-
-							const heading = question.headings![0].heading as string;
-
-							if (question.family === 'open_ended' || question.family === 'datetime') {
-								if (question.subtype !== 'multi') {
-									responseQuestions.set(heading, answers.get(question.id)![0].text as string);
-								} else {
-									const results: IDataObject = {};
-									const keys = (question.answers.rows as IRow[]).map((e) => e.text);
-									const values = answers.get(question.id)?.map((e) => e.text) as string[];
-									for (let i = 0; i < keys.length; i++) {
-										// if for some reason there are questions texts repeted add the index to the key
-										if (results[keys[i]] !== undefined) {
-											results[`${keys[i]}(${i})`] = values[i] || '';
-										} else {
-											results[keys[i]] = values[i] || '';
-										}
-									}
-									responseQuestions.set(heading, results);
-								}
-							}
-
-							if (question.family === 'single_choice') {
-								const other = question.answers.other as IOther;
-								if (
-									other?.visible &&
-									other.is_answer_choice &&
-									answers.get(question.id)![0].other_id
-								) {
-									responseQuestions.set(heading, answers.get(question.id)![0].text as string);
-								} else if (other?.visible && !other.is_answer_choice) {
-									const choiceId = answers.get(question.id)![0].choice_id;
-
-									const choice = (question.answers.choices as IChoice[]).filter(
-										(e) => e.id === choiceId,
-									)[0];
-
-									const comment = answers.get(question.id)?.find((e) => e.other_id === other.id)
-										?.text as string;
-									responseQuestions.set(heading, { value: choice.text, comment });
-								} else {
-									const choiceId = answers.get(question.id)![0].choice_id;
-									const choice = (question.answers.choices as IChoice[]).filter(
-										(e) => e.id === choiceId,
-									)[0];
-									responseQuestions.set(heading, choice.text);
-								}
-							}
-
-							if (question.family === 'multiple_choice') {
-								const other = question.answers.other as IOther;
-								const choiceIds = answers.get(question.id)?.map((e) => e.choice_id);
-								const value = (question.answers.choices as IChoice[])
-									.filter((e) => choiceIds?.includes(e.id))
-									.map((e) => e.text);
-								// if "Add an "Other" Answer Option for Comments" is active and was selected
-								if (other?.is_answer_choice && other.visible) {
-									const text = answers.get(question.id)?.find((e) => e.other_id === other.id)
-										?.text as string;
-									value.push(text);
-								}
-								responseQuestions.set(heading, value);
-							}
-
-							if (question.family === 'matrix') {
-								// if more than one row it's a matrix/rating-scale
-								const rows = question.answers.rows as IRow[];
-
-								if (rows.length > 1) {
-									const results: IDataObject = {};
-									const choiceIds = answers.get(question.id)?.map((e) => e.choice_id) as string[];
-									const rowIds = answers.get(question.id)?.map((e) => e.row_id) as string[];
-
-									const rowsValues = (question.answers.rows as IRow[])
-										.filter((e) => rowIds.includes(e.id))
-										.map((e) => e.text);
-
-									const choicesValues = (question.answers.choices as IChoice[])
-										.filter((e) => choiceIds.includes(e.id))
-										.map((e) => e.text);
-
-									for (let i = 0; i < rowsValues.length; i++) {
-										results[rowsValues[i]] = choicesValues[i] || '';
-									}
-
-									// add the rows that were not answered
-									for (const row of question.answers.rows as IDataObject[]) {
-										if (!rowIds.includes(row.id as string)) {
-											results[row.text as string] = '';
-										}
-									}
-									// the comment then add the comment
-									const other = question.answers.other as IOther;
-									if (other?.visible) {
-										results.comment = answers.get(question.id)?.filter((e) => e.other_id)[0].text;
-									}
-
-									responseQuestions.set(heading, results);
-								} else {
-									const choiceIds = answers.get(question.id)?.map((e) => e.choice_id);
-									const value = (question.answers.choices as IChoice[])
-										.filter((e) => choiceIds!.includes(e.id))
-										.map((e) => (e.text === '' ? e.weight : e.text))[0];
-									responseQuestions.set(heading, value);
-
-									// if "Add an Other Answer Option for Comments" is active then add comment to the answer
-									const other = question.answers.other as IOther;
-									if (other?.visible) {
-										const response: IDataObject = {};
-										//const questionName = (question.answers.other as IOther).text as string;
-										const text = answers.get(question.id)?.filter((e) => e.other_id)[0].text;
-										response.value = value;
-										response.comment = text;
-										responseQuestions.set(heading, response);
-									}
-								}
-							}
-
-							if (question.family === 'demographic') {
-								const rows: IDataObject = {};
-								for (const row of answers.get(question.id) as IAnswer[]) {
-									rows[row.row_id as string] = row.text;
-								}
-								const addressInfo: IDataObject = {};
-								for (const answer of question.answers.rows as IDataObject[]) {
-									addressInfo[answer.type as string] = rows[answer.id as string] || '';
-								}
-								responseQuestions.set(heading, addressInfo);
-							}
-
-							if (question.family === 'presentation') {
-								if (question.subtype === 'image') {
-									const { url } = question.headings![0].image as IDataObject;
-									responseQuestions.set(heading, url as string);
-								}
-							}
-						}
-						delete responseData.pages;
-						responseData.questions = {};
-
-						// Map the "Map" to JSON
-						const tuples = deepCopy([...responseQuestions]);
-						for (const [key, value] of tuples) {
-							responseData.questions[key] = value;
-						}
-
-						const onlyAnswers = this.getNodeParameter('onlyAnswers') as boolean;
-						if (onlyAnswers) {
-							responseData = responseData.questions;
-						}
-
-						returnItem = [
-							{
-								json: responseData,
-							},
-						];
-					}
-				}
-
-				return resolve({
-					workflowData: [returnItem],
-				});
-			});
-
-			req.on('error', (error) => {
-				throw new NodeOperationError(this.getNode(), error);
-			});
-		});
+		return {
+			workflowData: [returnItem],
+		};
 	}
 }
