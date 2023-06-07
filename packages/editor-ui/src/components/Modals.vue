@@ -121,6 +121,12 @@
 				<VersionControlPushModal :modalName="modalName" :data="data" />
 			</template>
 		</ModalRoot>
+
+		<ModalRoot :name="EXTERNAL_SECRETS_PROVIDER_MODAL_KEY">
+			<template #default="{ modalName, data }">
+				<ExternalSecretsProviderModal :modalName="modalName" :data="data" />
+			</template>
+		</ModalRoot>
 	</div>
 </template>
 
@@ -151,6 +157,7 @@ import {
 	ASK_AI_MODAL_KEY,
 	USER_ACTIVATION_SURVEY_MODAL,
 	VERSION_CONTROL_PUSH_MODAL_KEY,
+	EXTERNAL_SECRETS_PROVIDER_MODAL_KEY,
 } from '@/constants';
 
 import AboutModal from './AboutModal.vue';
@@ -178,6 +185,7 @@ import WorkflowShareModal from './WorkflowShareModal.ee.vue';
 import WorkflowSuccessModal from './UserActivationSurveyModal.vue';
 import EventDestinationSettingsModal from '@/components/SettingsLogStreaming/EventDestinationSettingsModal.ee.vue';
 import VersionControlPushModal from '@/components/VersionControlPushModal.ee.vue';
+import ExternalSecretsProviderModal from '@/components/ExternalSecretsProviderModal.ee.vue';
 
 export default defineComponent({
 	name: 'Modals',
@@ -207,6 +215,7 @@ export default defineComponent({
 		EventDestinationSettingsModal,
 		WorkflowSuccessModal,
 		VersionControlPushModal,
+		ExternalSecretsProviderModal,
 	},
 	data: () => ({
 		COMMUNITY_PACKAGE_CONFIRM_MODAL_KEY,
@@ -233,6 +242,7 @@ export default defineComponent({
 		LOG_STREAM_MODAL_KEY,
 		USER_ACTIVATION_SURVEY_MODAL,
 		VERSION_CONTROL_PUSH_MODAL_KEY,
+		EXTERNAL_SECRETS_PROVIDER_MODAL_KEY,
 	}),
 });
 </script>
