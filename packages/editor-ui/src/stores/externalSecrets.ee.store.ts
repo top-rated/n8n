@@ -5,6 +5,7 @@ import { useRootStore } from '@/stores/n8nRoot.store';
 import { useSettingsStore } from '@/stores/settings.store';
 import * as externalSecretsApi from '@/api/externalSecrets.ee';
 import type { ExternalSecretsProvider } from '@/Interface';
+import { getExternalSecrets } from '@/api/externalSecrets.ee';
 
 export const useExternalSecretsStore = defineStore('sso', () => {
 	const rootStore = useRootStore();
@@ -45,6 +46,27 @@ export const useExternalSecretsStore = defineStore('sso', () => {
 		} else {
 			state.providers.push(provider);
 		}
+
+		return provider;
+	}
+
+	async function updateProviderConnected(id: string, value: boolean) {
+		await updateProvider(id, { connected: value });
+		await getExternalSecrets(rootStore.getRestApiContext);
+	}
+
+	async function updateProvider(id: string, data: Partial<ExternalSecretsProvider>) {
+		const providerIndex = state.providers.findIndex((p) => p.id === id);
+		state.providers = [
+			...state.providers.slice(0, providerIndex),
+			{
+				...state.providers[providerIndex],
+				...data,
+			},
+			...state.providers.slice(providerIndex + 1),
+		];
+
+		await externalSecretsApi.updateProvider(rootStore.getRestApiContext, id, data);
 	}
 
 	return {
@@ -54,5 +76,7 @@ export const useExternalSecretsStore = defineStore('sso', () => {
 		fetchAllSecrets,
 		getProvider,
 		getProviders,
+		updateProvider,
+		updateProviderConnected,
 	};
 });

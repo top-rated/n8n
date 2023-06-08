@@ -43,6 +43,7 @@ import type {
 } from './constants';
 import type { BulkCommand, Undoable } from '@/models/history';
 import type { PartialBy } from '@/utils/typeHelpers';
+import { INodeProperties } from 'n8n-workflow';
 
 export * from 'n8n-design-system/types';
 
@@ -1531,7 +1532,8 @@ export interface ExternalSecretsProviderSecret {
 export interface ExternalSecretsProvider {
 	id: string;
 	name: string;
-	image: string;
 	connected: boolean;
 	connectedAt?: string;
+	properties: INodeProperties[];
+	data: Record<string, IUpdateInformation['value']>;
 }
