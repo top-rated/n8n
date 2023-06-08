@@ -7,7 +7,7 @@ import * as externalSecretsApi from '@/api/externalSecrets.ee';
 import type { ExternalSecretsProvider } from '@/Interface';
 import { getExternalSecrets } from '@/api/externalSecrets.ee';
 
-export const useExternalSecretsStore = defineStore('sso', () => {
+export const useExternalSecretsStore = defineStore('externalSecrets', () => {
 	const rootStore = useRootStore();
 	const settingsStore = useSettingsStore();
 
