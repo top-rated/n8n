@@ -1,5 +1,4 @@
 import type { IRestApiContext, ExternalSecretsProvider } from '@/Interface';
-import { IUpdateInformation } from '@/Interface';
 
 const infisical: ExternalSecretsProvider = {
 	id: 'infisical',
